@@ -1,42 +1,34 @@
 import sys
-# import mmhash
 import hashlib
 from sklearn.metrics import accuracy_score
-
 def H(val) :
     return hash(val)
+nbits = 18
+
 class pypegasos:
 
-    def __init__(self, nbits=18, lamb=.1):
-        self.scaling = 1.
-        self.nbits = nbits
-        self.lamb = lamb
-        self.biasKey = "BIAS"
-
+    def __init__(self):
+        self.lamb = 0.1
+        self.biasKey = "BABY KO BASE PASAND HA"
         self.vectorSize = 2 ** nbits
         self.resetWeights()
 
     def resetWeights(self):
-        self.weights = [0. for x in range(0, self.vectorSize)]
+        self.weights = []
+        self.weights = [0.0] * self.vectorSize
 
+    def getVal(self,coord) :
+        feature = coord.split(':')
+        featureName = str(feature[0])
+        featureVal = float(feature[1])
+        return featureName, featureVal
     def innerProduct(self, vec):
-        """ Input format here is similar to Vowpal Wabbit:
-            <feature_name>:<feature_value> """
-
-        # Bias term always takes a constant value of 1 for all our observations
-        # e.g., intercept in linear regression.
-        innerProd = (self.weights[self._hash(self.biasKey)] *
-                     self._rademacher(self.biasKey))
-
-        for coord in vec:
-            feature = coord.split(':')
-            featureName = str(feature[0])
-            featureVal = float(feature[1])
-            
+        innerProd = 0
+        for i,coord in enumerate(vec):
+            featureName, featureVal = self.getVal(coord)
             wtVal = self.weights[self._hash(featureName)]
-            radVal = self._rademacher(featureName)
-            innerProd = innerProd + (featureVal * wtVal * radVal)
-
+            radVal = -1
+            innerProd += (featureVal * wtVal * radVal)
         return innerProd
 
     def processBatch(self, currentBatch, t):
@@ -44,9 +36,10 @@ class pypegasos:
         updateSet = []
         # Determine which items in batch contribute to loss
         for obs in currentBatch:
-            if len(obs) < 2: continue
+            if len(obs) < 2: 
+                continue
             y = int(obs[-1])
-            if y==2: y = -1
+            if y==2 : y = -1
             else: y = 1
             obs[-1] = y
             if y != -1 and y != 1:
@@ -85,20 +78,18 @@ class pypegasos:
             # Compute subgradient of features
             features = obs[1:-1]
             for coord in features:
-                feature = coord.split(':')
-                featureName = str(feature[0])
-                featureVal = float(feature[1]) * y
+                featureName, featureVal = self.getVal(coord)
+                featureVal *= y
                 if featureName not in stepDirection:
-                    stepDirection[featureName] = 0.
-
+                    stepDirection[featureName] = 0.0
                 stepDirection[featureName] += featureVal
 
         scaling = eta/k
 
         # Update weight coefficients
-        for key,val in stepDirection.items():
+        for i,(key,val) in enumerate(stepDirection.items()):
             indx = self._hash(key)
-            rad = self._rademacher(key)
+            rad = -1
 
             self.weights[indx] *= (1 - (eta * lamb))
             self.weights[indx] += scaling * val * rad
@@ -126,12 +117,6 @@ class pypegasos:
     def _hash(self, val):
         return H(val) % self.vectorSize
 
-    def _rademacher(self, val):
-        if (H(val) >> 1) % 2 == 0:
-            return 1 
-        else:
-            return -1
-
     def _norm(self):
         sqNorm = sum(map(lambda x: x*x, self.weights))
         return sqNorm ** .5
@@ -141,12 +126,11 @@ k = sys.argv[3]
 batchSize = int(k) # Batch size. k=1 is SGD, k=N is batch GD
 t = 1
 filename = sys.argv[1]
-# dev = sys.argv[2]
 test = sys.argv[2]
 currentBatch = []
 inputfile = open(filename, 'r')
-# devfile = open(dev,'r')
 testfile = open(test,'r')
+
 for line in inputfile:
     splitLine = line.split(',')
     currentBatch.append(splitLine)
@@ -175,7 +159,4 @@ for line in testfile:
     else: p =-1
     y_pred.append(p)
 
-print(y_pred)
-print("\n\n\n\n\n")
-print(y_true)
 print(accuracy_score(y_true,y_pred))
