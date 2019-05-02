@@ -165,10 +165,15 @@ y_pred = []
 for line in testfile:
     splitLine = line.split(',')
     obs = splitLine
-    y_true.append(obs[-1])
+    yi = obs[-1]
+    if yi == 4: y = 1
+    else: y = -1
+    y_true.append(y)
     instance = obs[1:-1]
     prediction = vector.innerProduct(instance)
-    y_pred.append(prediction)
+    if prediction > 0: p = 1
+    else: p =-1
+    y_pred.append(p)
 
 print(y_pred)
 print("\n\n\n\n\n")
