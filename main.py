@@ -1,7 +1,10 @@
 import sys
-import mmhash
+# import mmhash
+import hashlib
 from sklearn.metrics import accuracy_score
 
+def H(val) :
+    return hash(val)
 class pypegasos:
 
     def __init__(self, nbits=18, lamb=.1):
@@ -93,7 +96,7 @@ class pypegasos:
         scaling = eta/k
 
         # Update weight coefficients
-        for key,val in stepDirection.iteritems():
+        for key,val in stepDirection.items():
             indx = self._hash(key)
             rad = self._rademacher(key)
 
@@ -121,10 +124,10 @@ class pypegasos:
             
 
     def _hash(self, val):
-        return mmhash.get_hash(val) % self.vectorSize
+        return H(val) % self.vectorSize
 
     def _rademacher(self, val):
-        if (mmhash.get_hash(val) >> 1) % 2 == 0:
+        if (H(val) >> 1) % 2 == 0:
             return 1 
         else:
             return -1
@@ -133,17 +136,16 @@ class pypegasos:
         sqNorm = sum(map(lambda x: x*x, self.weights))
         return sqNorm ** .5
 
-vector = pypegasos(nbits)
+vector = pypegasos()
 k = sys.argv[3]
-batchSize = k # Batch size. k=1 is SGD, k=N is batch GD
+batchSize = int(k) # Batch size. k=1 is SGD, k=N is batch GD
 t = 1
-lamb = lamb
 filename = sys.argv[1]
 # dev = sys.argv[2]
 test = sys.argv[2]
 currentBatch = []
 inputfile = open(filename, 'r')
-devfile = open(dev,'r')
+# devfile = open(dev,'r')
 testfile = open(test,'r')
 for line in inputfile:
     splitLine = line.split(',')
@@ -168,4 +170,7 @@ for line in testfile:
     prediction = vector.innerProduct(instance)
     y_pred.append(prediction)
 
+print(y_pred)
+print("\n\n\n\n\n")
+print(y_true)
 print(accuracy_score(y_true,y_pred))
